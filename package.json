@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
+    "db:clear": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/clear-db.ts"
   },
   "dependencies": {
     "@next/font": "13.1.6",
@@ -22,6 +24,7 @@
     "typescript": "4.9.5"
   },
   "devDependencies": {
+    "@faker-js/faker": "^7.6.0",
     "autoprefixer": "^10.4.13",
     "install": "^0.13.0",
     "postcss": "^8.4.21",

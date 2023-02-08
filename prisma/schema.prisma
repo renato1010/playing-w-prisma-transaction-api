@@ -44,7 +44,7 @@ model Stuff {
   id          String      @id @default(cuid())
   title       String
   description String      @db.VarChar(300)
-  barter      Barter      @relation(fields: [barterId], references: [id])
+  barter      Barter      @relation(fields: [barterId], references: [id], onDelete: Cascade)
   barterId    String
   status      StuffStatus @default(AVAILABLE)
   createdAt   DateTime    @default(now())
