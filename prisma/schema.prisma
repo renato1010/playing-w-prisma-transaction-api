@@ -9,3 +9,44 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum StuffStatus {
+  AVAILABLE
+  NOTAVAILABLE
+  SELECTED
+}
+
+enum ExchangeStatus {
+  MATCHED
+  EXCHANGED
+}
+
+model Exchange {
+  id               String         @id @default(cuid())
+  providerBarterId String
+  acquirerBarterId String
+  providerItemId   String
+  acquirerItemId   String
+  status           ExchangeStatus @default(MATCHED)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model Barter {
+  id        String   @id @default(cuid())
+  user      String   @unique
+  offers    Stuff[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Stuff {
+  id          String      @id @default(cuid())
+  title       String
+  description String      @db.VarChar(300)
+  barter      Barter      @relation(fields: [barterId], references: [id])
+  barterId    String
+  status      StuffStatus @default(AVAILABLE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
