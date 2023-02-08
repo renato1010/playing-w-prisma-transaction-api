@@ -6,10 +6,10 @@ type BarterItemProps = {
   serializedData: string;
 };
 const BarterItem = ({ serializedData }: BarterItemProps) => {
-  const { user }: Barter = JSON.parse(serializedData);
+  const { user, id }: Barter = JSON.parse(serializedData);
 
   return (
-    <Link className="text-center font-bold text-blue-500" href={`/barters/${user}`}>
+    <Link className="text-center font-bold text-blue-500" href={`/barters/${id}`}>
       {user}
     </Link>
   );
