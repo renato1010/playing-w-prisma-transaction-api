@@ -14,7 +14,20 @@ export default async function BarterStuffPage({
         {stuffList.map((stuff) => {
           return (
             <li className="text-center" key={stuff.id}>
-              <Link href={`/stuff/${stuff.id}`}>{stuff.title}</Link>
+              <Link href={`/stuff/${stuff.id}`}>
+                <div
+                  className={`pd-4 border border-sky-600 rounded-md ${
+                    stuff.status === "NOTAVAILABLE"
+                      ? "bg-red-300"
+                      : stuff.status === "AVAILABLE"
+                      ? "bg-green-300"
+                      : "bg-sky-300"
+                  }`}
+                >
+                  <p>{stuff.title}</p>
+                  <p>status: {stuff.status}</p>
+                </div>
+              </Link>
             </li>
           );
         })}
