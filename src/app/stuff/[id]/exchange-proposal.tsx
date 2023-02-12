@@ -15,7 +15,7 @@ type ExchangeProposalProps = {
 };
 const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
   const { barterId, stuffId }: ProviderData = JSON.parse(serializedData);
-  const { data, error, isMutating, trigger } = useSWRMutation("api/exchanges/start", triggerExchange);
+  const { data, error, isMutating, trigger } = useSWRMutation("http://localhost:3000/api/exchanges/start", triggerExchange);
   const [{ providerId, acquirerId, providerItemId, acquirerItemId }, setExState] = useState<ExchangeState>(
     () => ({
       providerId: barterId,
@@ -29,7 +29,8 @@ const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
 
   const isExchangeStateValid = (state: unknown) => startExchangeSchema.safeParse(state).success;
   const startExchange = () => {
-    if (isExchangeStateValid({ providerId, acquirerId, providerItemId, acquirerItemId })) {
+    const isValidState = isExchangeStateValid({ providerId, acquirerId, providerItemId, acquirerItemId });
+    if (isValidState) {
       trigger({ providerId, acquirerId, providerItemId, acquirerItemId });
     } else {
       // user hasn't supplied al required info
@@ -42,12 +43,12 @@ const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
   if (isMutating) {
     return <p className={`text-sm text-red-400`}>Mutating data...</p>;
   }
-  console.log({ data });
+  console.log({ data,error });
   return (
     <div className="w-full my-6 p-4 flex justify-center">
-      <details className="w-full flex justify-center p-6" open={isOpen}>
+      <details className="flex justify-center p-6" open={isOpen}>
         <summary
-          className={`w-full flex justify-center items-center px-4 py-6 list-none cursor-pointer
+          className={`flex justify-center items-center px-4 py-6 list-none cursor-pointer
             ${isOpen ? "bg-sky-200" : "bg-white"}
           `}
           onClick={() => setIsOpen((val) => !val)}
@@ -60,8 +61,8 @@ const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
             ➕
           </span>
         </summary>
-        <div className="w-full flex flex-col justify-start items-center">
-          <div className="w-full py-6 px-4 flex flex-col justify-start items-center">
+        <div className="flex flex-col justify-start items-center">
+          <div className="py-6 px-4 flex flex-col justify-start items-center">
             <label className="self-start" htmlFor="barterid">
               Your Barter Id:
             </label>
@@ -74,7 +75,7 @@ const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
               onChange={(e) => setExState((state) => ({ ...state, acquirerId: e.target.value }))}
             />
           </div>
-          <div className="w-full py-6 px-4 flex flex-col justify-start items-center">
+          <div className="py-6 px-4 flex flex-col justify-start items-center">
             <label className="self-start" htmlFor="stuffid">
               Exchange Item(offered) Id:
             </label>

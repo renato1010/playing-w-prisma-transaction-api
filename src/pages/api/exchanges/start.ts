@@ -19,10 +19,13 @@ export default async function handler(
 ) {
   // always use http methods as lowercase
   const method = req.method?.toLowerCase() ?? null;
+  // serialized body
   const body = req.body;
   try {
     // validate schema for body and for req method
-    const { acquirerId, acquirerItemId, providerId, providerItemId } = startExchangeSchema.parse(body);
+    const { acquirerId, acquirerItemId, providerId, providerItemId } = startExchangeSchema.parse(
+      JSON.parse(body)
+    );
     const _parsedMethod = postMethodSchema.parse(method);
     const updatedItems = await startExchangeTransactions({
       providerId,
@@ -30,6 +33,8 @@ export default async function handler(
       providerItemId,
       acquirerItemId,
     });
+    console.log({ updatedItems });
+
     const successResponse = getSuccessResponse(200, updatedItems);
     res.status(200).json(successResponse);
   } catch (error) {

@@ -5,7 +5,7 @@ import { Exchange } from "@prisma/client";
 type StartExReqBody = z.infer<typeof startExchangeSchema>;
 
 async function startExchange(
-  url: string = "api/exchanges/start",
+  url:string,
   { arg }: { arg: StartExReqBody }
 ): Promise<Exchange> {
   const res = await fetch(url, {
