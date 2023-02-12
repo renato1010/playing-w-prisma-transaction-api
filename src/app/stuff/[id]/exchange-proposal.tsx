@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import { z } from "zod";
+import useSWRMutation from "swr/mutation";
 import { startExchangeSchema } from "@/utils/api/zod-schemas";
+import { startExchange as triggerExchange } from "@/utils/api/swr/exchange";
 
 type ProviderData = {
   barterId: string;
@@ -13,6 +15,7 @@ type ExchangeProposalProps = {
 };
 const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
   const { barterId, stuffId }: ProviderData = JSON.parse(serializedData);
+  const { data, error, isMutating, trigger } = useSWRMutation("api/exchanges/start", triggerExchange);
   const [{ providerId, acquirerId, providerItemId, acquirerItemId }, setExState] = useState<ExchangeState>(
     () => ({
       providerId: barterId,
@@ -22,17 +25,24 @@ const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
     })
   );
   const [isOpen, setIsOpen] = useState(false);
-  const [validationInfo, setValidationInfo] = useState("");
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
 
   const isExchangeStateValid = (state: unknown) => startExchangeSchema.safeParse(state).success;
-  const validateState = () => {
+  const startExchange = () => {
     if (isExchangeStateValid({ providerId, acquirerId, providerItemId, acquirerItemId })) {
-      setValidationInfo(`Validation OK`);
+      trigger({ providerId, acquirerId, providerItemId, acquirerItemId });
     } else {
-      setValidationInfo(`Validation not OK`);
+      // user hasn't supplied al required info
+      setHasValidationErrors(true);
     }
   };
-  console.log({ providerId, acquirerId, providerItemId, acquirerItemId });
+  if (error) {
+    return <p className={`text-sm text-red-400`}>Something went wron when mutating data: {String(error)}</p>;
+  }
+  if (isMutating) {
+    return <p className={`text-sm text-red-400`}>Mutating data...</p>;
+  }
+  console.log({ data });
   return (
     <div className="w-full my-6 p-4 flex justify-center">
       <details className="w-full flex justify-center p-6" open={isOpen}>
@@ -78,13 +88,15 @@ const ExchangeProposal = ({ serializedData }: ExchangeProposalProps) => {
             />
           </div>
           <button
-            onClick={validateState}
+            onClick={startExchange}
             className="w-full px-6 py-4 border border-blue-800 bg-blue-200 
           text-blue-900 cursor-pointer font-bold rounded-lg"
           >
             Send exchange proposal
           </button>
-          <p>{validationInfo}</p>
+          <p className={`invisible text-sm text-red-400 ${hasValidationErrors ? "visible" : ""}`}>
+            Both fields are required
+          </p>
         </div>
       </details>
     </div>
