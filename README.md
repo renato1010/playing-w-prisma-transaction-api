@@ -2,37 +2,101 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-First, run the development server:
+Typical Next.JS project; here we're just playing with [Prisma](https://www.prisma.io/) transactions API `$.transaction`  
+We've scaffolded a nextjs 13 app, and used both server/client components
+
+The Tour: start checking the [prisma schema](prisma/schema.prisma)
+Essential we have two individuals willing to exchange "stuff"  
+So the way we proceed is listing all "Barters" at: [`src/app/barters/page.tsx`](src/app/barters/page.tsx)  
+That will render at route:`http://localhost:3000/barters` after running the `dev` script
+
+On the `/barters` page you will see the list of all the `Barters`, and if you click on  
+this will take you to the barters page where all your items/things are listed.
+
+We used a script to seed DB: [`seed.ts`](prisma/seed.ts) and its respective `npm script`
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+npm run db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A [`db:clear`](prisma/seed.ts) utility is also available
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+We used [`faker`](https://fakerjs.dev/) package to seed DB; that's why the weird names!
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+So, the running demos goes like:
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+1. At your favorites barter page(http://localhost:3000/barters/cldv0idei0020h1b52zvo3rrx) you pick the stuff you like(click).
+2. At the "Stuff" detail page, you can go n click "propose exchange"
+3. Enter your barterId and the Id for the stuff(yours) that you wanted to change
+4. Click the "Send exchange proposal" button and the transaction starts
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Transaction
 
-## Learn More
+At client: [`exchange-proposal.tsx`](src/app/stuff/[id]/exchange-proposal.tsx) form we gather up all the information we need  
+for api call we used the [`swr`](https://swr.vercel.app/) for `mutation`  
+to run the transaction:
+We call an api/route: [`api/exchanges/start`](src/pages/api/exchanges/start.ts)  
+and from there a `transaction` function or "interactive transaction" that is a function that can cointain  
+use code including **Prisma Client** queries, non-Prisma code and other control flow to be executed  
+in a transaction, using the `$transaction<R>(fun:(prisma:PrismaClient) => R, options?:object):R`  
+you can check that function here: [`start-transaction.ts`](src/utils/transactions/start-transaction.ts)
 
-To learn more about Next.js, take a look at the following resources:
+To ilustrate the process we checked `prisma studio` before/after to verify the creation of
+the transaction record:  
+before:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+<img width=600 src="https://losormorpino-public-media.s3.us-east-2.amazonaws.com/jk00e4z.png" />
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+after:
 
-## Deploy on Vercel
+<img width=600 src="https://losormorpino-public-media.s3.us-east-2.amazonaws.com/4y10efb.png" />
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+\* Also if you keeped track of both the provider item(stuff) Id, and acquirer item(stuff) Id,  
+ both of these should be marked as(status) "SELECTED"  
+ <img width=600 src="https://losormorpino-public-media.s3.us-east-2.amazonaws.com/qa00jwk.png" />  
+ <img width=600 src="https://losormorpino-public-media.s3.us-east-2.amazonaws.com/m210jf2.png" />
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+The transaction flow was like commented in the transaction function but as a summary I leave this here
+
+```ts
+return await prisma.$transaction(async (tx) => {
+  // 1. check provider owns item and item status is other than NOTAVAILABLE
+  const providerStuff = await tx.stuff.findFirst({
+    where: {
+      OR: [
+        { id: providerItemId, barterId: providerId, status: "AVAILABLE" },
+        { id: providerItemId, barterId: providerId, status: "SELECTED" },
+      ],
+    },
+  });
+  // 2. check acquirer owns acquirer item
+  const acquirerStuff = await tx.stuff.findFirst({
+    where: {
+      OR: [
+        { id: acquirerItemId, barterId: acquirerId, status: "AVAILABLE" },
+        { id: acquirerItemId, barterId: acquirerId, status: "SELECTED" },
+      ],
+    },
+  });
+  if (!providerStuff || !acquirerStuff) {
+    throw new Error("Exchange cancelled");
+  }
+  // 4. update provider item with status = SELECTED
+  const _updateProviderStuff = await tx.stuff.update({
+    where: { id: providerItemId },
+    data: { status: "SELECTED" },
+  });
+  // 5. update  acquirer item with status = SELECTED
+  const _updateAcquirerStuff = await tx.stuff.update({
+    where: { id: acquirerItemId },
+    data: { status: "SELECTED" },
+  });
+  // 6. create Exchange record
+  const newExchange = await tx.exchange.create({
+    data: { providerBarterId: providerId, acquirerBarterId: acquirerId, providerItemId, acquirerItemId },
+  });
+  return newExchange;
+});
+```
+
+🙌🏼
